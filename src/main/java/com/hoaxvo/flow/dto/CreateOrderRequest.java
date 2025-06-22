@@ -6,4 +6,5 @@ import lombok.Data;
 public class CreateOrderRequest {
   private String requestId;
   private String cusNo;
+  private String companyId;
 }

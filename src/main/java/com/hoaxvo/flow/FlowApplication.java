@@ -1,12 +1,12 @@
 package com.hoaxvo.flow;
 
-import com.hoaxvo.flow.core.AbstractFlow;
 import com.hoaxvo.flow.core.Flow;
-import com.hoaxvo.flow.core.FlowContext;
+import com.hoaxvo.flow.core.FlowBuilder;
 import com.hoaxvo.flow.dto.CreateOrderRequest;
-import com.hoaxvo.flow.dto.context.CreateOrderContext;
-import com.hoaxvo.flow.services.step.InsertOrderStep;
-import com.hoaxvo.flow.services.step.ValidatePartnerInfoStep;
+import com.hoaxvo.flow.dto.context.CreateOrderOrderContext;
+import com.hoaxvo.flow.services.step.createorder.GetUserAddressStep;
+import com.hoaxvo.flow.services.step.createorder.InsertOrderStep;
+import com.hoaxvo.flow.services.step.createorder.ValidateCompanyStep;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.UUID;
@@ -16,36 +16,39 @@ public class FlowApplication {
 
     public static void main(String[] args) {
         InsertOrderStep insertOrderStep = new InsertOrderStep();
+        ValidateCompanyStep validateCompanyStep = new ValidateCompanyStep();
+        GetUserAddressStep getUserAddressStep = new GetUserAddressStep();
 
-        ValidatePartnerInfoStep validatePartnerInfoStep = new ValidatePartnerInfoStep();
-        insertOrderStep.setNext(validatePartnerInfoStep);
-        CreateOrderContext createOrderContext = new CreateOrderContext();
-
+        CreateOrderOrderContext createOrderContext = new CreateOrderOrderContext();
         CreateOrderRequest createOrderRequest = new CreateOrderRequest();
-        createOrderRequest.setCusNo("12345");
         createOrderRequest.setRequestId(UUID.randomUUID().toString());
+        createOrderRequest.setCompanyId("COMPA-33");
 
         createOrderContext.setCreateOrderRequest(createOrderRequest);
 
-        Flow<CreateOrderRequest, CreateOrderContext> b2bCreateOrderFlow = new AbstractFlow<>() {
+        Flow<CreateOrderOrderContext> b2bCreateOrderFlow = FlowBuilder
+                .startWith(insertOrderStep)
+                .then(validateCompanyStep)
+                .then(null)
+                .build(createOrderContext);
 
-            @Override
-            public CreateOrderContext getContextData() {
-                return this.flowContext.getContextData();
-            }
+        CreateOrderOrderContext d2cCreateOrderContext = new CreateOrderOrderContext();
+        CreateOrderRequest d2cCreateOrderRequest = new CreateOrderRequest();
+        d2cCreateOrderRequest.setRequestId(UUID.randomUUID().toString());
+        d2cCreateOrderRequest.setCusNo("CUST-124");
+        d2cCreateOrderContext.setCreateOrderRequest(d2cCreateOrderRequest);
 
-            @Override
-            public void setContextData(CreateOrderContext contextData) {
-                this.flowContext = new FlowContext<>();
-                this.flowContext.setContextData(contextData);
-            }
-        };
+        Flow<CreateOrderOrderContext> d2cCreateOrderFlow = FlowBuilder
+                .startWith(getUserAddressStep)
+                .then(insertOrderStep)
+                .then(null)
+                .build(d2cCreateOrderContext);
 
-        b2bCreateOrderFlow.setFirstStep(insertOrderStep);
-        b2bCreateOrderFlow.setContextData(createOrderContext);
-        b2bCreateOrderFlow.run(createOrderRequest);
-        CreateOrderContext context = b2bCreateOrderFlow.getContextData();
-        System.out.println("Context: " + context);
+        b2bCreateOrderFlow.run();
+        d2cCreateOrderFlow.run();
+
+        System.out.println("B2B Context: " + b2bCreateOrderFlow.getContextData());
+        System.out.println("D2C Context: " + d2cCreateOrderFlow.getContextData());
     }
 
 }
