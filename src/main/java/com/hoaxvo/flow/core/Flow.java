@@ -1,8 +1,19 @@
 package com.hoaxvo.flow.core;
 
-public interface  Flow<T> {
-     void run();
-     T getContextData();
-     void setContextData(T contextData);
-     void setFirstStep(Step<T> firstStep);
+import java.util.List;
+
+public class Flow {
+     private final List<Node<?>> nodes;
+     private final FlowContext context = new FlowContext();
+
+     public Flow(List<Node<?>> nodes) {
+          this.nodes = nodes;
+     }
+
+     public void start() {
+          for (Node<?> node : nodes) {
+               NodeContext<?> result = node.execute(context);
+               context.putNodeContext(node.getId(), result);
+          }
+     }
 }

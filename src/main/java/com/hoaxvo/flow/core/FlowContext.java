@@ -1,10 +1,31 @@
 package com.hoaxvo.flow.core;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data
+import java.util.Collections;
+import java.util.Map;
+
 @AllArgsConstructor
+@NoArgsConstructor
 public class FlowContext<T> {
-    private T contextData;
+    private Map<String, NodeContext<?>> nodesContext;
+    private T result;
+
+    public Map<String, NodeContext<?>> getNodesContext() {
+        return Collections.unmodifiableMap(nodesContext);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <V> NodeContext<V> getNodeContext(String nodeId, Class<V> clazz) {
+        return (NodeContext<V>) nodesContext.get(nodeId);
+    }
+
+    void putNodeContext(String nodeId, NodeContext<?> context) {
+        nodesContext.put(nodeId, context);
+    }
+
+    void buildResult(){
+
+    }
 }
